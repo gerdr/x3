@@ -1,0 +1,13 @@
+heap:
+- hashtable object-pointer -> dispatcher + meta-object + object-pointer
+
+instruction sets:
+- high-level --> source code
+- low-level --> bytecode
+- virtual --> interpreter
+
+bytecode file:
+- set of loadable/unloadable chunks
+- namespace, symbols
+- actual *byte*code, so portable
+  stores arbitrary precision ints + floats
