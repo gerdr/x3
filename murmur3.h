@@ -60,20 +60,29 @@ static inline uint32_t burn(uint32_t hash)
 
 static inline uint32_t murmur3_32(const void *key, size_t size, uint32_t seed)
 {
-	assert(is_aligned32(key));
-
-	const uint32_t *cursor = (const uint32_t *)key;
-	const uint32_t *tail = cursor + size / 4;
+	const uint8_t *cursor = key;
+	const uint8_t *tail = cursor + (size / 4) * 4;
 
 	uint32_t hash = seed;
 
-	for(; cursor < tail; ++cursor)
+	if(is_aligned32(key))
 	{
-		hash = mixin(hash, *cursor);
-		hash = remix(hash);
+		for(; cursor < tail; cursor += 4)
+		{
+			hash = mixin(hash, *(const uint32_t *)(const void *)cursor);
+			hash = remix(hash);
+		}
+	}
+	else
+	{
+		for(; cursor < tail; cursor += 4)
+		{
+			hash = mixin(hash, get32(cursor, 4));
+			hash = remix(hash);
+		}
 	}
 
-	hash = mixin(hash, get32((const uint8_t *)tail, size % 4));
+	hash = mixin(hash, get32(tail, size % 4));
 	hash ^= (uint32_t)size;
 	hash = burn(hash);
 
