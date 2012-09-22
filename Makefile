@@ -2,7 +2,7 @@
 .DEFAULT_GOAL := build
 
 TESTS := t-basic
-OBJECTS := core.o
+OBJECTS := core.o symtable.o
 DEPS := $(OBJECTS:%.o=%.d)
 
 CLANG := clang -std=c99 -Werror -Weverything

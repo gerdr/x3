@@ -20,20 +20,41 @@ enum x3_msg_
 typedef enum x3_msg_ x3_msg;
 typedef struct x3_vm_ x3_vm;
 typedef void x3_dispatcher(x3_vm *, void *, void *, x3_msg, void *);
+typedef struct x3_symbol_ x3_symbol;
 
 void x3_core(x3_vm *vm);
 void x3_dispatch(x3_vm *vm, void *obj, x3_msg msg, void *args);
 void x3_register(x3_vm *vm, void *obj, void *meta, x3_dispatcher dp);
 void x3_gc(x3_vm *vm);
-void x3_define(x3_vm *vm, const char *name, x3_value value, _Bool is_ref);
-void x3_undef(x3_vm *vm, const char *name);
-const x3_value *x3_resolve(x3_vm *vm, const char *name);
+const x3_symbol *x3_define(x3_vm *vm, const char *name, void *value);
+void x3_undef(x3_vm *vm, const x3_symbol *symbol);
+void *x3_resolve(x3_vm *vm, const char *name);
+// TODO: functions to load/unload chunks
 
 // HERE BE DRAGONS
 
 typedef struct x3_callframe_ x3_callframe;
 typedef struct x3_callstack_ x3_callstack;
 typedef struct x3_object_ x3_object;
+typedef struct x3_symtable_ x3_symtable;
+
+_Bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed);
+
+struct x3_symbol_
+{
+	void *value;
+	uint32_t hash;
+	uint32_t length;
+	uint8_t name[];
+};
+
+struct x3_symtable_
+{
+	uint8_t *index;
+	uint32_t mask;
+	uint32_t seed;
+	union { x3_symbol *as_single, **as_multiple; } *buckets;
+};
 
 struct x3_object_
 {
@@ -56,6 +77,7 @@ struct x3_callstack_
 struct x3_vm_
 {
 	x3_callstack callstack;
+	x3_symtable symtable;
 };
 
 #endif
