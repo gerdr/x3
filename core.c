@@ -1,6 +1,18 @@
 #include "x3.h"
 #include <assert.h>
 
+union cell
+{
+	x3_int as_int;
+	x3_uint as_uint;
+	x3_float as_float;
+	x3_word as_word;
+	x3_uword as_uword;
+	void *as_ptr;
+	const void *as_cptr;
+	void (*as_fptr)(void);
+};
+
 extern const char x3_core_return[];
 extern const char x3_core_yield[];
 extern const char x3_core_add_ia[];
@@ -18,7 +30,7 @@ extern const char x3_core_offset_pb[];
 
 void x3_core(x3_vm *vm)
 {
-	register const x3_value *ip;
+	register const union cell *ip;
 	register void *fp;
 
 	register union { x3_int s; x3_uint u; } ia, ib;

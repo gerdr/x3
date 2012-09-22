@@ -18,7 +18,6 @@ enum x3_msg_
 };
 
 typedef enum x3_msg_ x3_msg;
-typedef union x3_value_ x3_value;
 typedef struct x3_vm_ x3_vm;
 typedef void x3_dispatcher(x3_vm *, void *, void *, x3_msg, void *);
 
@@ -36,18 +35,6 @@ typedef struct x3_callframe_ x3_callframe;
 typedef struct x3_callstack_ x3_callstack;
 typedef struct x3_object_ x3_object;
 
-union x3_value_
-{
-	x3_int as_int;
-	x3_uint as_uint;
-	x3_float as_float;
-	x3_word as_word;
-	x3_uword as_uword;
-	void *as_ptr;
-	const void *as_cptr;
-	void (*as_fptr)(void);
-};
-
 struct x3_object_
 {
 	x3_dispatcher *dispatcher;
@@ -57,7 +44,7 @@ struct x3_object_
 
 struct x3_callframe_
 {
-	const x3_value *ip;
+	const void *ip;
 	void *fp;
 };
 
