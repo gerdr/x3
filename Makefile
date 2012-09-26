@@ -2,7 +2,7 @@
 .DEFAULT_GOAL := build
 
 TESTS := t-murmur3 t-cxx-header
-OBJECTS := core.o symtable.o
+OBJECTS := core.o symtable.o heap.o
 DEPS := $(OBJECTS:%.o=%.d)
 
 CLANG := clang -std=c99 -Werror -Weverything
@@ -36,6 +36,7 @@ $(TESTS) : % : %.c $(OBJECTS)
 	$(BUILD)
 
 core.o : NOWARN := gnu
+heap.o : NOWARN := unreachable-code
 $(OBJECTS) : %.o : %.c
 	$(CHECK_SYNTAX)
 	$(COMPILE)
