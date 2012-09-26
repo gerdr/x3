@@ -27,13 +27,13 @@ typedef struct x3_vm_ x3_vm;
 typedef void x3_dispatcher(x3_vm *, void *, void *, x3_msg, void *);
 typedef struct x3_symbol_ x3_symbol;
 
-void x3_core(x3_vm *vm);
-void x3_dispatch(x3_vm *vm, void *obj, x3_msg msg, void *args);
-void x3_register(x3_vm *vm, void *obj, void *meta, x3_dispatcher dp);
-void x3_gc(x3_vm *vm);
-const x3_symbol *x3_define(x3_vm *vm, const char *name, void *value);
-void x3_undef(x3_vm *vm, const x3_symbol *symbol);
-void *x3_resolve(x3_vm *vm, const char *name);
+extern void x3_core(x3_vm *vm);
+extern void x3_dispatch(x3_vm *vm, void *obj, x3_msg msg, void *args);
+extern void x3_register(x3_vm *vm, void *obj, void *meta, x3_dispatcher dp);
+extern void x3_gc(x3_vm *vm);
+extern const x3_symbol *x3_define(x3_vm *vm, const char *name, void *value);
+extern void x3_undef(x3_vm *vm, const x3_symbol *symbol);
+extern void *x3_resolve(x3_vm *vm, const char *name);
 // TODO: functions to load/unload chunks
 
 // HERE BE DRAGONS
