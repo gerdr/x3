@@ -39,6 +39,8 @@ extern void *x3_resolve(x3_vm *vm, const char *name);
 static inline size_t x3_symtable_size(x3_vm *vm);
 static inline size_t x3_symtable_load(x3_vm *vm);
 
+extern const x3_vm X3_VM;
+
 // HERE BE DRAGONS
 
 typedef struct x3_callframe_ x3_callframe;

@@ -46,6 +46,8 @@ static _Bool register_symbol(x3_symtable *st, x3_symbol *symbol)
 	{
 		st->buckets[slot].as_single = symbol;
 		st->index[slot] = 1;
+		++st->load;
+
 		return 1;
 	}
 
@@ -63,6 +65,7 @@ static _Bool register_symbol(x3_symtable *st, x3_symbol *symbol)
 
 		st->buckets[slot].as_multiple = symbols;
 		st->index[slot] = 2;
+		++st->load;
 
 		return 1;
 	}
@@ -83,6 +86,7 @@ static _Bool register_symbol(x3_symtable *st, x3_symbol *symbol)
 
 	st->buckets[slot].as_multiple = symbols;
 	st->index[slot] = (uint8_t)(fill_count + 1);
+	++st->load;
 
 	return 1;
 }

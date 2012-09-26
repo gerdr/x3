@@ -1,9 +1,10 @@
-.PHONY : build clean test
+.PHONY : build clean tests check
 .DEFAULT_GOAL := build
 
 TESTS := t-murmur3 t-symtable t-cxx-header
-OBJECTS := core.o symtable.o heap.o
-DEPS := $(OBJECTS:%.o=%.d)
+OBJECTS := vm.o core.o symtable.o heap.o
+TESTOBJECTS := $(TESTS:%=%.o)
+DEPS := $(OBJECTS:%.o=%.d) $(TESTOBJECTS:%.o=%.d)
 
 CLANG := clang -std=c99 -Werror -Weverything
 CLANGXX := clang++ -std=c++98 -Werror -Weverything
@@ -21,22 +22,24 @@ RUN = @set -e; for BIN in $(BINARIES); do echo ./$$BIN; ./$$BIN; done
 
 build : $(OBJECTS)
 
-clean : GARBAGE := $(OBJECTS) $(DEPS) $(TESTS)
+clean : GARBAGE := $(OBJECTS) $(TESTOBJECTS) $(DEPS) $(TESTS)
 clean :
 	$(CLEAN)
 
-test : BINARIES := $(TESTS)
-test : $(TESTS)
+tests : $(TESTOBJECTS)
+
+check : BINARIES := $(TESTS)
+check : $(TESTS)
 	$(RUN)
 
-t-cxx-header : CLANG := $(CLANGXX) -xc++
 t-cxx-header : GCC := $(GXX)
-$(TESTS) : % : %.c $(OBJECTS)
-	$(CHECK_SYNTAX)
+$(TESTS) : % : %.o $(OBJECTS)
 	$(BUILD)
 
 core.o : NOWARN := gnu
 heap.o : NOWARN := unreachable-code
-$(OBJECTS) : %.o : %.c
+t-cxx-header.o : CLANG := $(CLANGXX) -xc++
+t-cxx-header.o : GCC := $(GXX) -xc++
+$(OBJECTS) $(TESTOBJECTS) : %.o : %.c
 	$(CHECK_SYNTAX)
 	$(COMPILE)
