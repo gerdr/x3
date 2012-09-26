@@ -36,6 +36,9 @@ extern void x3_undef(x3_vm *vm, const x3_symbol *symbol);
 extern void *x3_resolve(x3_vm *vm, const char *name);
 // TODO: functions to load/unload chunks
 
+static inline size_t x3_symtable_size(x3_vm *vm);
+static inline size_t x3_symtable_load(x3_vm *vm);
+
 // HERE BE DRAGONS
 
 typedef struct x3_callframe_ x3_callframe;
@@ -58,6 +61,7 @@ struct x3_symtable_
 	uint8_t *index;
 	uint32_t mask;
 	uint32_t seed;
+	size_t load;
 	union { x3_symbol *as_single, **as_multiple; } *buckets;
 };
 
@@ -84,6 +88,16 @@ struct x3_vm_
 	x3_callstack callstack;
 	x3_symtable symtable;
 };
+
+static inline size_t x3_symtable_size(x3_vm *vm)
+{
+	return (size_t)(vm->symtable.mask + 1);
+}
+
+static inline size_t x3_symtable_load(x3_vm *vm)
+{
+	return vm->symtable.load;
+}
 
 #ifdef __cplusplus
 }

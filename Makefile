@@ -1,7 +1,7 @@
 .PHONY : build clean test
 .DEFAULT_GOAL := build
 
-TESTS := t-murmur3 t-cxx-header
+TESTS := t-murmur3 t-symtable t-cxx-header
 OBJECTS := core.o symtable.o heap.o
 DEPS := $(OBJECTS:%.o=%.d)
 

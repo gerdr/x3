@@ -29,13 +29,72 @@ static x3_symbol *create_symbol(const char *name, void *value, uint32_t seed)
 	return symbol;
 }
 
-//static _Bool reserve_symbols(x3_vm *vm, size_t count);
+static _Bool equal_names(const x3_symbol *s1, const x3_symbol *s2)
+{
+	return s1->hash == s2->hash &&
+		strcmp((char *)s1->name, (char *)s2->name) == 0;
+}
+
+static _Bool register_symbol(x3_symtable *st, x3_symbol *symbol)
+{
+	uint32_t slot = symbol->hash & st->mask;
+
+	size_t fill_count = st->index[slot];
+	assert(fill_count < (uint8_t)-1);
+
+	if(fill_count == 0)
+	{
+		st->buckets[slot].as_single = symbol;
+		st->index[slot] = 1;
+		return 1;
+	}
+
+	if(fill_count == 1)
+	{
+		x3_symbol *other_symbol = st->buckets[slot].as_single;
+		if(equal_names(symbol, other_symbol))
+			return 0;
+
+		x3_symbol **symbols = malloc(2 * sizeof *symbols);
+		if(!symbols) return 0;
+
+		symbols[0] = other_symbol;
+		symbols[1] = symbol;
+
+		st->buckets[slot].as_multiple = symbols;
+		st->index[slot] = 2;
+
+		return 1;
+	}
+
+	x3_symbol **symbols = st->buckets[slot].as_multiple;
+
+	// fail on symbol duplication
+	for(unsigned i = 0; i < fill_count; ++i)
+	{
+		if(equal_names(symbol, symbols[i]))
+			return 0;
+	}
+
+	symbols = realloc(symbols, (fill_count + 1) * sizeof *symbols);
+	if(!symbols) return 0;
+
+	symbols[fill_count] = symbol;
+
+	st->buckets[slot].as_multiple = symbols;
+	st->index[slot] = (uint8_t)(fill_count + 1);
+
+	return 1;
+}
 
 const x3_symbol *x3_define(x3_vm *vm, const char *name, void *value)
 {
 	x3_symbol *symbol = create_symbol(name, value, vm->symtable.seed);
-	assert(!"TODO: add symbol to table");
-	return symbol;
+	if(!symbol || register_symbol(&vm->symtable, symbol))
+		return symbol;
+
+	free(symbol);
+	return NULL;
 }
 
 _Bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed)
@@ -46,6 +105,7 @@ _Bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed)
 	x3_symtable st = {
 		.mask = (uint32_t)(size - 1),
 		.seed = seed,
+		.load = 0,
 		.index = calloc(size, sizeof *st.index),
 		.buckets = malloc(size * sizeof *st.buckets)
 	};
@@ -61,64 +121,9 @@ FAIL:
 	free(st.buckets);
 
 	return 0;
-
 }
 
 /*
-size_t m0_interp_chunk_map_size(const m0_interp *interp)
-{
-	const struct map *map = (struct map *)m0_interp_chunk_map(interp);
-	return map->mask + 1;
-}
-
-static uint32_t hash_string(const m0_string *string, uint32_t seed)
-{
-	return murmur3_32(string->bytes, string->byte_size - sizeof *string, seed);
-}
-
-static bool register_chunk(struct map *map, uint32_t hash, uint32_t chunk_id)
-{
-	uint32_t slot = hash & map->mask;
-
-	size_t fill_count = map->index[slot];
-	assert(fill_count < (uint8_t)-1);
-
-	if(fill_count == 0)
-	{
-		map->buckets[slot].as_single.hash = hash;
-		map->buckets[slot].as_single.chunk_id = chunk_id;
-		map->index[slot] = 1;
-		return 1;
-	}
-
-	if(fill_count == 1)
-	{
-		struct bucket *bucket = (struct bucket *)malloc(sizeof *bucket);
-		if(!bucket) return 0;
-
-		bucket->hash = hash;
-		bucket->chunk_id = chunk_id;
-
-		map->buckets[slot].as_multiple = bucket;
-		map->index[slot] = 2;
-
-		return 1;
-	}
-
-	struct bucket *buckets = (struct bucket *)realloc(
-		map->buckets[slot].as_multiple, (fill_count + 1) * sizeof *buckets);
-
-	if(!buckets) return 0;
-
-	buckets[fill_count].hash = hash;
-	buckets[fill_count].chunk_id = (uint32_t)chunk_id;
-
-	map->buckets[slot].as_multiple = buckets;
-	map->index[slot] = (uint8_t)(fill_count + 1);
-
-	return 1;
-}
-
 bool m0_interp_register_reserved_chunk(
 	m0_interp *interp, const m0_string *name, size_t chunk_id)
 {
