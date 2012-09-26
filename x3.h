@@ -1,8 +1,13 @@
 #ifndef X3_H_
 #define X3_H_
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef int64_t x3_int;
 typedef uint64_t x3_uint;
@@ -38,7 +43,7 @@ typedef struct x3_callstack_ x3_callstack;
 typedef struct x3_object_ x3_object;
 typedef struct x3_symtable_ x3_symtable;
 
-_Bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed);
+bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed);
 
 struct x3_symbol_
 {
@@ -79,5 +84,9 @@ struct x3_vm_
 	x3_callstack callstack;
 	x3_symtable symtable;
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
