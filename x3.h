@@ -47,6 +47,7 @@ typedef struct x3_callframe_ x3_callframe;
 typedef struct x3_callstack_ x3_callstack;
 typedef struct x3_object_ x3_object;
 typedef struct x3_symtable_ x3_symtable;
+typedef union x3_symbucket_ x3_symbucket;
 
 bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed);
 
@@ -58,13 +59,18 @@ struct x3_symbol_
 	uint8_t name[];
 };
 
+union x3_symbucket_
+{
+	x3_symbol *as_single, **as_multiple;
+};
+
 struct x3_symtable_
 {
 	uint8_t *index;
 	uint32_t mask;
 	uint32_t seed;
 	size_t load;
-	union { x3_symbol *as_single, **as_multiple; } *buckets;
+	x3_symbucket *buckets;
 };
 
 struct x3_object_
