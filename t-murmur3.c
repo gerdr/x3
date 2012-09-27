@@ -1,13 +1,10 @@
 #include "murmur3.h"
 
-#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 
 #undef NDEBUG
 #include <assert.h>
-
-enum { SEED = 42 };
 
 #define LOREM_IPSUM \
 	"Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do " \
@@ -17,6 +14,8 @@ enum { SEED = 42 };
 	"voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur " \
 	"sint occaecat cupidatat non proident, sunt in culpa qui officia " \
 	"deserunt mollit anim id est laborum."
+
+enum { SEED = 42 };
 
 int main(void)
 {
