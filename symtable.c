@@ -206,3 +206,33 @@ FAIL:
 
 	return 0;
 }
+
+void *x3_resolve(x3_vm *vm, const char *name)
+{
+	x3_symtable *const st = &vm->symtable;
+
+	uint32_t hash = murmur3_32(name, strlen(name), st->seed);
+	uint32_t slot = hash & st->mask;
+	size_t fill_count = st->index[slot];
+
+	if(fill_count == 0)
+		return NULL;
+
+	if(fill_count == 1)
+	{
+		x3_symbol *symbol = st->buckets[slot].as_single;
+		if(symbol->hash != hash || strcmp((char *)symbol->name, name) != 0)
+			return NULL;
+
+		return symbol->value;
+	}
+
+	for(size_t i = 0; i < fill_count; ++i)
+	{
+		x3_symbol *symbol = st->buckets[slot].as_multiple[i];
+		if(symbol->hash == hash && strcmp((char *)symbol->name, name) == 0)
+			return symbol->value;
+	}
+
+	return NULL;
+}
