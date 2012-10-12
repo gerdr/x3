@@ -41,11 +41,25 @@ extern const x3_vm X3_VM;
 
 typedef struct x3_callframe_ x3_callframe;
 typedef struct x3_callstack_ x3_callstack;
-typedef struct x3_object_ x3_object;
+typedef struct x3_meta_ x3_meta;
 typedef struct x3_symtable_ x3_symtable;
 typedef union x3_symbucket_ x3_symbucket;
+typedef union x3_corecell_ x3_corecell;
+typedef struct x3_heap_ x3_heap;
 
 bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed);
+
+union x3_corecell_
+{
+	x3_int as_int;
+	x3_uint as_uint;
+	x3_float as_float;
+	x3_word as_word;
+	x3_uword as_uword;
+	void *as_ptr;
+	const void *as_cptr;
+	void (*as_fptr)(void);
+};
 
 struct x3_symbol_
 {
@@ -78,7 +92,7 @@ struct x3_object_
 
 struct x3_callframe_
 {
-	const void *ip;
+	const x3_corecell *ip;
 	void *fp;
 };
 
