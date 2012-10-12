@@ -1,10 +1,11 @@
-#ifndef __cplusplus
-#error "This file must be compiled as C++"
-#endif
+#include "x3.hxx"
 
-#include "x3.h"
+#undef NDEBUG
+#include <cassert>
 
 int main(void)
 {
+	x3::vm vm;
+
 	return 0;
 }

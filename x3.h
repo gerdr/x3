@@ -5,10 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef int64_t x3_int;
 typedef uint64_t x3_uint;
 typedef double x3_float;
@@ -106,9 +102,5 @@ static inline size_t x3_symtable_load(x3_vm *vm)
 {
 	return vm->symtable.load;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
