@@ -1,7 +1,7 @@
 .PHONY : build clean tests check
 .DEFAULT_GOAL := build
 
-TESTS := t-murmur3 t-bithacks t-symtable t-core t-cxx-header
+TESTS := t-murmur3 t-bithacks t-symtable t-core t-cplusplus
 OBJECTS := vm.o core.o symtable.o heap.o
 TESTOBJECTS := $(TESTS:%=%.o)
 DEPS := $(OBJECTS:%.o=%.d) $(TESTOBJECTS:%.o=%.d)
@@ -32,14 +32,15 @@ check : BINARIES := $(TESTS)
 check : $(TESTS)
 	$(RUN)
 
-t-cxx-header : GCC := $(GXX)
-$(TESTS) : % : %.o $(OBJECTS)
+t-cplusplus : GCC := $(GXX)
+t-symtable : symtable.o vm.o
+$(TESTS) : % : %.o
 	$(BUILD)
 
 core.o : NOWARN := gnu
 heap.o : NOWARN := unreachable-code
-t-cxx-header.o : CLANG := $(CLANGXX) -xc++
-t-cxx-header.o : GCC := $(GXX) -xc++
+t-cplusplus.o : CLANG := $(CLANGXX) -xc++
+t-cplusplus.o : GCC := $(GXX) -xc++
 $(OBJECTS) $(TESTOBJECTS) : %.o : %.c
 	$(CHECK_SYNTAX)
 	$(COMPILE)
