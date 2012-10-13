@@ -43,7 +43,6 @@ typedef struct x3_callframe_ x3_callframe;
 typedef struct x3_callstack_ x3_callstack;
 typedef struct x3_meta_ x3_meta;
 typedef struct x3_symtable_ x3_symtable;
-typedef union x3_symbucket_ x3_symbucket;
 typedef union x3_corecell_ x3_corecell;
 typedef struct x3_heap_ x3_heap;
 
@@ -63,24 +62,19 @@ union x3_corecell_
 
 struct x3_symbol_
 {
+	x3_symbol *next;
 	void *value;
 	uint32_t hash;
 	uint32_t length;
 	uint8_t name[];
 };
 
-union x3_symbucket_
-{
-	x3_symbol *as_single, **as_multiple;
-};
-
 struct x3_symtable_
 {
-	uint8_t *index;
 	uint32_t mask;
 	uint32_t seed;
 	size_t load;
-	x3_symbucket *buckets;
+	x3_symbol **buckets;
 };
 
 struct x3_object_

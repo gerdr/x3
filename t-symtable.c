@@ -16,12 +16,12 @@ int main(void)
 	assert(x3_symtable_load(vm) == 0);
 
 	{
-		const x3_symbol *symbol = x3_define(vm, "x3::vm", DUMMY);
+		const x3_symbol *symbol = x3_define(vm, "dummy", DUMMY);
 		assert(symbol != NULL);
 		assert(x3_symtable_load(vm) == 1);
 
-		assert(x3_resolve(vm, "x3::vm") == DUMMY);
-		assert(x3_define(vm, "x3::vm", DUMMY) == 0);
+		assert(x3_resolve(vm, "dummy") == DUMMY);
+		assert(x3_define(vm, "dummy", DUMMY) == 0);
 		assert(x3_symtable_load(vm) == 1);
 	}
 

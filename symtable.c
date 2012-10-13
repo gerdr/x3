@@ -14,6 +14,7 @@ static x3_symbol *create_symbol(const char *name, void *value, uint32_t seed)
 	if(!symbol) return NULL;
 
 	memcpy(symbol->name, name, length + 1);
+	symbol->next = NULL;
 	symbol->hash = murmur3_32(symbol->name, length, seed);
 	symbol->length = (uint32_t)length;
 	symbol->value = value;
@@ -31,53 +32,18 @@ static _Bool register_symbol(x3_symtable *st, x3_symbol *symbol)
 {
 	uint32_t slot = symbol->hash & st->mask;
 
-	size_t fill_count = st->index[slot];
-	assert(fill_count < (uint8_t)-1);
-
-	if(fill_count == 0)
-	{
-		st->buckets[slot].as_single = symbol;
-		st->index[slot] = 1;
-		++st->load;
-
-		return 1;
-	}
-
-	if(fill_count == 1)
-	{
-		x3_symbol *other_symbol = st->buckets[slot].as_single;
-		if(equal_names(symbol, other_symbol))
-			return 0;
-
-		x3_symbol **symbols = malloc(2 * sizeof *symbols);
-		if(!symbols) return 0;
-
-		symbols[0] = other_symbol;
-		symbols[1] = symbol;
-
-		st->buckets[slot].as_multiple = symbols;
-		st->index[slot] = 2;
-		++st->load;
-
-		return 1;
-	}
-
-	x3_symbol **symbols = st->buckets[slot].as_multiple;
-
 	// fail on symbol duplication
-	for(unsigned i = 0; i < fill_count; ++i)
+	const x3_symbol *current = st->buckets[slot];
+	for(; current; current = current->next)
 	{
-		if(equal_names(symbol, symbols[i]))
+		assert(current);
+		assert(symbol);
+		if(equal_names(symbol, current))
 			return 0;
 	}
 
-	symbols = realloc(symbols, (fill_count + 1) * sizeof *symbols);
-	if(!symbols) return 0;
-
-	symbols[fill_count] = symbol;
-
-	st->buckets[slot].as_multiple = symbols;
-	st->index[slot] = (uint8_t)(fill_count + 1);
+	symbol->next = st->buckets[slot];
+	st->buckets[slot] = symbol;
 	++st->load;
 
 	return 1;
@@ -102,16 +68,12 @@ static void try_rehashing_if_necessary(x3_symtable *st, size_t count)
 	uint32_t new_mask = (uint32_t)(new_size - 1);
 	assert(new_mask == new_size - 1);
 
-	x3_symbucket *new_buckets = malloc(
-		sizeof *new_buckets + new_size * sizeof *new_buckets);
+	x3_symbol **new_buckets = calloc(new_size, sizeof *new_buckets);
 
-	uint8_t *new_index = calloc(new_size, sizeof *new_index);
-
-	if(!new_buckets || !new_index)
+	if(!new_buckets)
 		goto FAIL;
 
 	x3_symtable new_st = {
-		.index = new_index,
 		.mask = new_mask,
 		.seed = st->seed,
 		.load = 0,
@@ -120,43 +82,24 @@ static void try_rehashing_if_necessary(x3_symtable *st, size_t count)
 
 	for(size_t i = 0; i < current_size; ++i)
 	{
-		size_t fill_count = st->index[i];
-		if(!fill_count) continue;
-
-		if(fill_count == 1)
+		x3_symbol *current = st->buckets[i];
+		for(x3_symbol *next; current; current = next)
 		{
-			if(!register_symbol(&new_st, st->buckets[i].as_single))
+			next = current->next;
+			if(!register_symbol(&new_st, st->buckets[i]))
 				goto DESTROY_AND_FAIL;
-
-			continue;
-		}
-
-		for(size_t j = 0; j < fill_count; ++j)
-		{
-			x3_symbol *symbol = st->buckets[i].as_multiple[j];
-			if(!register_symbol(&new_st, symbol))
-				goto DESTROY_AND_FAIL;
-
-			continue;
 		}
 	}
 
 	*st = new_st;
-
 	return;
 
 DESTROY_AND_FAIL:
-
 	for(size_t i = 0; i < new_size; ++i)
-	{
-		if(new_index[i] > 1)
-			free(new_buckets[i].as_multiple);
-	}
+		free(new_buckets[i]);
 
 FAIL:
-
 	free(new_buckets);
-	free(new_index);
 }
 
 const x3_symbol *x3_define(x3_vm *vm, const char *name, void *value)
@@ -173,9 +116,7 @@ const x3_symbol *x3_define(x3_vm *vm, const char *name, void *value)
 	return symbol;
 
 FAIL:
-
 	free(symbol);
-
 	return NULL;
 }
 
@@ -188,11 +129,10 @@ _Bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed)
 		.mask = (uint32_t)(size - 1),
 		.seed = seed,
 		.load = 0,
-		.index = calloc(size, sizeof *st.index),
-		.buckets = malloc(size * sizeof *st.buckets)
+		.buckets = calloc(size, sizeof *st.buckets)
 	};
 
-	if(!st.index || !st.buckets)
+	if(!st.buckets)
 		goto FAIL;
 
 	vm->symtable = st;
@@ -200,10 +140,7 @@ _Bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed)
 	return 1;
 
 FAIL:
-
-	free(st.index);
 	free(st.buckets);
-
 	return 0;
 }
 
@@ -213,25 +150,12 @@ void *x3_resolve(x3_vm *vm, const char *name)
 
 	uint32_t hash = murmur3_32(name, strlen(name), st->seed);
 	uint32_t slot = hash & st->mask;
-	size_t fill_count = st->index[slot];
 
-	if(fill_count == 0)
-		return NULL;
-
-	if(fill_count == 1)
+	const x3_symbol *current = st->buckets[slot];
+	for(; current; current = current->next)
 	{
-		x3_symbol *symbol = st->buckets[slot].as_single;
-		if(symbol->hash != hash || strcmp((char *)symbol->name, name) != 0)
-			return NULL;
-
-		return symbol->value;
-	}
-
-	for(size_t i = 0; i < fill_count; ++i)
-	{
-		x3_symbol *symbol = st->buckets[slot].as_multiple[i];
-		if(symbol->hash == hash && strcmp((char *)symbol->name, name) == 0)
-			return symbol->value;
+		if(current->hash == hash && strcmp((char *)current->name, name) == 0)
+			return current->value;
 	}
 
 	return NULL;
