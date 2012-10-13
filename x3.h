@@ -28,7 +28,7 @@ extern const x3_vm X3_VM;
 
 extern void x3_core(x3_vm *vm);
 extern bool x3_dispatch(x3_vm *vm, void *obj, x3_msg msg, void *args);
-extern void x3_register(x3_vm *vm, void *obj, void *metadata, x3_dispatcher dp);
+extern bool x3_register(x3_vm *vm, void *obj, void *metadata, x3_dispatcher dp);
 extern void x3_gc(x3_vm *vm);
 extern const x3_symbol *x3_define(x3_vm *vm, const char *name, void *value);
 extern void x3_undef(x3_vm *vm, const x3_symbol *symbol);
@@ -37,6 +37,9 @@ extern void *x3_resolve(x3_vm *vm, const char *name);
 
 static inline size_t x3_symtable_size(x3_vm *vm);
 static inline size_t x3_symtable_load(x3_vm *vm);
+
+static inline size_t x3_heap_size(x3_vm *vm);
+static inline size_t x3_heap_load(x3_vm *vm);
 
 // HERE BE DRAGONS
 
@@ -132,6 +135,16 @@ static inline size_t x3_symtable_size(x3_vm *vm)
 static inline size_t x3_symtable_load(x3_vm *vm)
 {
 	return vm->symtable.load;
+}
+
+static inline size_t x3_heap_size(x3_vm *vm)
+{
+	return (size_t)(vm->heap.mask + 1);
+}
+
+static inline size_t x3_heap_load(x3_vm *vm)
+{
+	return vm->heap.load;
 }
 
 #endif

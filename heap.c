@@ -59,70 +59,40 @@ FAIL:
 	return 0;
 }
 
-/*
-
-TODO: reuse old symtable implementation
-
-static _Bool register_symbol(x3_symtable *st, x3_symbol *symbol)
+static bool add_entry(x3_heap *hp, const x3_meta *meta)
 {
-	uint32_t slot = symbol->hash & st->mask;
-
-	size_t fill_count = st->index[slot];
+	uint32_t slot = ptrhash(meta->body) & hp->mask;
+	size_t fill_count = hp->index[slot];
 	assert(fill_count < (uint8_t)-1);
 
+	x3_meta *entries = hp->buckets[slot];
+
+	// check for duplicate entries
+	for(size_t i = 0; i < fill_count; ++i)
+	{
+		if(hp->buckets[slot][i].body == meta->body)
+			return 0;
+	}
+
 	if(fill_count == 0)
-	{
-		st->buckets[slot].as_single = symbol;
-		st->index[slot] = 1;
-		++st->load;
+		hp->buckets[slot] = NULL;
 
-		return 1;
-	}
+	entries = realloc(entries, (fill_count + 1) * sizeof *entries);
+	if(!entries) return 0;
 
-	if(fill_count == 1)
-	{
-		x3_symbol *other_symbol = st->buckets[slot].as_single;
-		if(equal_names(symbol, other_symbol))
-			return 0;
+	entries[fill_count] = *meta;
 
-		x3_symbol **symbols = malloc(2 * sizeof *symbols);
-		if(!symbols) return 0;
-
-		symbols[0] = other_symbol;
-		symbols[1] = symbol;
-
-		st->buckets[slot].as_multiple = symbols;
-		st->index[slot] = 2;
-		++st->load;
-
-		return 1;
-	}
-
-	x3_symbol **symbols = st->buckets[slot].as_multiple;
-
-	// fail on symbol duplication
-	for(unsigned i = 0; i < fill_count; ++i)
-	{
-		if(equal_names(symbol, symbols[i]))
-			return 0;
-	}
-
-	symbols = realloc(symbols, (fill_count + 1) * sizeof *symbols);
-	if(!symbols) return 0;
-
-	symbols[fill_count] = symbol;
-
-	st->buckets[slot].as_multiple = symbols;
-	st->index[slot] = (uint8_t)(fill_count + 1);
-	++st->load;
+	hp->buckets[slot] = entries;
+	hp->index[slot] = (uint8_t)(fill_count + 1);
+	++hp->load;
 
 	return 1;
 }
 
-static void try_rehashing_if_necessary(x3_symtable *st, size_t count)
+static void try_rehashing_if_necessary(x3_heap *hp, size_t count)
 {
-	size_t current_size = st->mask + 1;
-	size_t new_load = st->load + count;
+	size_t current_size = hp->mask + 1;
+	size_t new_load = hp->load + count;
 	size_t new_size = preferred_size(new_load);
 
 	if(new_size <= current_size)
@@ -131,55 +101,37 @@ static void try_rehashing_if_necessary(x3_symtable *st, size_t count)
 	uint32_t new_mask = (uint32_t)(new_size - 1);
 	assert(new_mask == new_size - 1);
 
-	x3_symbucket *new_buckets = malloc(
-		sizeof *new_buckets + new_size * sizeof *new_buckets);
-
+	x3_meta **new_buckets = malloc(new_size * sizeof *new_buckets);
 	uint8_t *new_index = calloc(new_size, sizeof *new_index);
 
 	if(!new_buckets || !new_index)
 		goto FAIL;
 
-	x3_symtable new_st = {
+	x3_heap new_hp = {
 		.index = new_index,
 		.mask = new_mask,
-		.seed = st->seed,
 		.load = 0,
 		.buckets = new_buckets
 	};
 
 	for(size_t i = 0; i < current_size; ++i)
 	{
-		size_t fill_count = st->index[i];
-		if(!fill_count) continue;
-
-		if(fill_count == 1)
+		for(size_t j = 0; j < hp->index[i]; ++j)
 		{
-			if(!register_symbol(&new_st, st->buckets[i].as_single))
+			if(!add_entry(hp, &hp->buckets[i][j]))
 				goto DESTROY_AND_FAIL;
-
-			continue;
-		}
-
-		for(size_t j = 0; j < fill_count; ++j)
-		{
-			x3_symbol *symbol = st->buckets[i].as_multiple[j];
-			if(!register_symbol(&new_st, symbol))
-				goto DESTROY_AND_FAIL;
-
-			continue;
 		}
 	}
 
-	*st = new_st;
-
+	*hp = new_hp;
 	return;
 
 DESTROY_AND_FAIL:
 
 	for(size_t i = 0; i < new_size; ++i)
 	{
-		if(new_index[i] > 1)
-			free(new_buckets[i].as_multiple);
+		if(new_index[i])
+			free(new_buckets[i]);
 	}
 
 FAIL:
@@ -188,23 +140,14 @@ FAIL:
 	free(new_index);
 }
 
-const x3_symbol *x3_define(x3_vm *vm, const char *name, void *value)
+bool x3_register(x3_vm *vm, void *obj, void *metadata, x3_dispatcher dp)
 {
-	x3_symbol *symbol = create_symbol(name, value, vm->symtable.seed);
-	if(!symbol)
-		return NULL;
+	x3_meta meta = {
+		.body = obj,
+		.data = metadata,
+		.dispatcher = dp
+	};
 
-	try_rehashing_if_necessary(&vm->symtable, 1);
-
-	if(!register_symbol(&vm->symtable, symbol))
-		goto FAIL;
-
-	return symbol;
-
-FAIL:
-
-	free(symbol);
-
-	return NULL;
+	try_rehashing_if_necessary(&vm->heap, 1);
+	return add_entry(&vm->heap, &meta);
 }
-*/
