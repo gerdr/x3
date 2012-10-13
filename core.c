@@ -1,13 +1,6 @@
 #include "x3.h"
 #include <assert.h>
 
-extern const char x3_core_return[];
-extern const char x3_core_yield[];
-extern const char x3_core_add_ia[];
-extern const char x3_core_add_fa[];
-extern const char x3_core_offset_pa[];
-extern const char x3_core_offset_pb[];
-
 #define DEF(NAME) \
 	static const void *const core_ ## NAME ## _ = &&core_ ## NAME; \
 	(void)core_ ## NAME ## _; core_ ## NAME: \

@@ -51,6 +51,13 @@ typedef struct x3_symtable_ x3_symtable;
 
 typedef union x3_corecell_ x3_corecell;
 
+extern const char x3_core_return[];
+extern const char x3_core_yield[];
+extern const char x3_core_add_ia[];
+extern const char x3_core_add_fa[];
+extern const char x3_core_offset_pa[];
+extern const char x3_core_offset_pb[];
+
 extern bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed);
 extern bool x3_init_heap(x3_vm *vm, size_t size);
 

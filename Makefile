@@ -34,8 +34,10 @@ check : $(TESTS)
 	$(RUN)
 
 t-cplusplus : GCC := $(GXX)
-t-symtable : symtable.o vm.o
-t-heap : heap.o vm.o
+t-symtable t-heap t-core : vm.o
+t-symtable : symtable.o
+t-heap : heap.o
+t-core : core.o
 $(TESTS) : % : %.o
 	$(BUILD)
 
