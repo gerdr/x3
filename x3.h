@@ -13,6 +13,7 @@ typedef size_t x3_uword;
 
 enum x3_msg_
 {
+	X3_MSG_NOOP,
 	X3_MSG_GET,
 	X3_MSG_SET,
 	X3_MSG_CALL
@@ -23,9 +24,11 @@ typedef struct x3_vm_ x3_vm;
 typedef void x3_dispatcher(x3_vm *, void *, void *, x3_msg, void *);
 typedef struct x3_symbol_ x3_symbol;
 
+extern const x3_vm X3_VM;
+
 extern void x3_core(x3_vm *vm);
-extern void x3_dispatch(x3_vm *vm, void *obj, x3_msg msg, void *args);
-extern void x3_register(x3_vm *vm, void *obj, void *meta, x3_dispatcher dp);
+extern bool x3_dispatch(x3_vm *vm, void *obj, x3_msg msg, void *args);
+extern void x3_register(x3_vm *vm, void *obj, void *metadata, x3_dispatcher dp);
 extern void x3_gc(x3_vm *vm);
 extern const x3_symbol *x3_define(x3_vm *vm, const char *name, void *value);
 extern void x3_undef(x3_vm *vm, const x3_symbol *symbol);
@@ -35,18 +38,21 @@ extern void *x3_resolve(x3_vm *vm, const char *name);
 static inline size_t x3_symtable_size(x3_vm *vm);
 static inline size_t x3_symtable_load(x3_vm *vm);
 
-extern const x3_vm X3_VM;
-
 // HERE BE DRAGONS
 
 typedef struct x3_callframe_ x3_callframe;
 typedef struct x3_callstack_ x3_callstack;
+
 typedef struct x3_meta_ x3_meta;
-typedef struct x3_symtable_ x3_symtable;
-typedef union x3_corecell_ x3_corecell;
+typedef union x3_heapbucket_ x3_heapbucket;
 typedef struct x3_heap_ x3_heap;
 
-bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed);
+typedef struct x3_symtable_ x3_symtable;
+
+typedef union x3_corecell_ x3_corecell;
+
+extern bool x3_init_symtable(x3_vm *vm, size_t size, uint32_t seed);
+extern bool x3_init_heap(x3_vm *vm, size_t size);
 
 union x3_corecell_
 {
@@ -77,11 +83,20 @@ struct x3_symtable_
 	x3_symbol **buckets;
 };
 
-struct x3_object_
+struct x3_heap_
 {
+	uint8_t *index;
+	uint32_t mask;
+	size_t load;
+	x3_meta **buckets;
+};
+
+struct x3_meta_
+{
+	uintptr_t flags;
 	x3_dispatcher *dispatcher;
 	void *body;
-	void *meta;
+	void *data;
 };
 
 struct x3_callframe_
@@ -99,6 +114,7 @@ struct x3_vm_
 {
 	x3_callstack callstack;
 	x3_symtable symtable;
+	x3_heap heap;
 };
 
 static inline size_t x3_symtable_size(x3_vm *vm)
